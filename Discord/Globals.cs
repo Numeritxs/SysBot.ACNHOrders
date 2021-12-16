@@ -29,14 +29,14 @@ namespace SysBot.ACNHOrders
 
             // Check if this user is a Guild User, which is the only context where roles exist
             if (context.User is not SocketGuildUser gUser)
-                return Task.FromResult(PreconditionResult.FromError("You must be in a guild to run this command."));
+                return Task.FromResult(PreconditionResult.FromError("Necesitas estar en un gremio para ejecutar este comando."));
 
             if (!mgr.AcceptingCommands)
-                return Task.FromResult(PreconditionResult.FromError("Sorry, I am not currently accepting commands!"));
+                return Task.FromResult(PreconditionResult.FromError("Lo siento, actualmente no acepto comandos."));
 
             bool hasRole = mgr.GetHasRole(_name, gUser.Roles.Select(z => z.Name));
             if (!hasRole)
-                return Task.FromResult(PreconditionResult.FromError("You do not have the required role to run this command."));
+                return Task.FromResult(PreconditionResult.FromError("No tienes el rol necesario para ejecutar este comando."));
 
             return Task.FromResult(PreconditionResult.FromSuccess());
         }

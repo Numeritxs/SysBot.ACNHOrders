@@ -27,7 +27,7 @@ namespace SysBot.ACNHOrders.Twitch
                 var result = VillagerOrderParser.ExtractVillagerName(orderString, out var res, out var san);
                 if (result == VillagerOrderParser.VillagerRequestResult.InvalidVillagerRequested)
                 {
-                    msg = $"@{username} - {res} Order has not been accepted.";
+                    msg = $"@{username} - {res} Pedido no aceptado.";
                     return false;
                 }
 
@@ -35,7 +35,7 @@ namespace SysBot.ACNHOrders.Twitch
                 {
                     if (!cfg.AllowVillagerInjection)
                     {
-                        msg = $"@{username} - Villager injection is currently disabled.";
+                        msg = $"@{username} - La inyeción de aldeanos está deshabilitada.";
                         return false;
                     }
 
@@ -73,7 +73,7 @@ namespace SysBot.ACNHOrders.Twitch
                 var result = VillagerOrderParser.ExtractVillagerName(presetName, out var res, out var san);
                 if (result == VillagerOrderParser.VillagerRequestResult.InvalidVillagerRequested)
                 {
-                    msg = $"@{username} - {res} Order has not been accepted.";
+                    msg = $"@{username} - {res} El pedido no ha sido aceptado.";
                     return false;
                 }
 
@@ -81,7 +81,7 @@ namespace SysBot.ACNHOrders.Twitch
                 {
                     if (!cfg.AllowVillagerInjection)
                     {
-                        msg = $"@{username} - Villager injection is currently disabled.";
+                        msg = $"@{username} - La inyección de aldeanos está deshabilitada.";
                         return false;
                     }
 
@@ -94,7 +94,7 @@ namespace SysBot.ACNHOrders.Twitch
                 var preset = PresetLoader.GetPreset(cfg.OrderConfig, presetName);
                 if (preset == null)
                 {
-                    msg = $"{username} - {presetName} is not a valid preset.";
+                    msg = $"{username} - {presetName} no es un preset válido.";
                     return false;
                 }
 
@@ -112,10 +112,10 @@ namespace SysBot.ACNHOrders.Twitch
         {
             QueueExtensions.GetPosition(userID, out var order);
             if (order == null)
-                return "Sorry, you are not in the queue, or your order is happening now.";
+                return "Lo siento, no estás en la cola o tu pedido se está llevando a cabo ahora.";
 
             order.SkipRequested = true;
-            return "Your order has been removed. Please note that you will not be able to rejoin the queue again for a while.";
+            return "Tu pedido ha sido eliminado. Ten en cuenta que no podrás unirte a la cola durante un rato.";
         }
 
         public static string ClearTrade(string userID)
@@ -130,11 +130,11 @@ namespace SysBot.ACNHOrders.Twitch
         {
             var position = QueueExtensions.GetPosition(userID, out var order);
             if (order == null)
-                return "Sorry, you are not in the queue, or your order is happening now.";
+                return "Lo siento, no estás en la cola o tu pedido se está llevando a cabo ahora.";
 
-            var message = $"You are in the order queue. Position: {position}.";
+            var message = $"Estás en la cola. Posición: {position}.";
             if (position > 1)
-                message += $" Your predicted ETA is {QueueExtensions.GetETA(position)}.";
+                message += $" Tiempo restante aproximado: {QueueExtensions.GetETA(position)}.";
 
             return message;
         }
@@ -144,16 +144,16 @@ namespace SysBot.ACNHOrders.Twitch
             var presets = PresetLoader.GetPresets(Globals.Bot.Config.OrderConfig);
 
             if (presets.Length < 1)
-                return "There are not presets available";
+                return "No hay presets disponibles.";
             else
-                return $"The following presets are available: {string.Join(", ", presets)}. Enter {prefix}preset [preset name] to order one!";
+                return $"Los presets disponibles son los siguientes: {string.Join(", ", presets)}. Introduce {prefix}preset [nombre del preset] para pedir uno!";
         }
 
         public static string Clean(ulong id, string username, TwitchConfig tcfg)
         {
             if (!tcfg.AllowDropViaTwitchChat)
             {
-                LogUtil.LogInfo($"{username} is attempting to clean items, however the twitch configuration does not currently allow drop commands", nameof(TwitchCrossBot));
+                LogUtil.LogInfo($"{username} está intentando limpiar objetos, aunque la configuración de Twitch no permite comandos de drop.", nameof(TwitchCrossBot));
                 return string.Empty;
             }
 
@@ -161,17 +161,17 @@ namespace SysBot.ACNHOrders.Twitch
                 return error;
 
             if (!Globals.Bot.Config.AllowClean)
-                return "Clean functionality is currently disabled.";
+                return "La función de limpieza está actualmente desactivada.";
             
             Globals.Bot.CleanRequested = true;
-            return "A clean request will be executed momentarily.";
+            return "Una petición de limpieza será ejecutada en unos momentos.";
         }
 
         public static string Drop(string message, ulong id, string username, TwitchConfig tcfg)
         {
             if (!tcfg.AllowDropViaTwitchChat)
             {
-                LogUtil.LogInfo($"{username} is attempting to drop items, however the twitch configuration does not currently allow drop commands", nameof(TwitchCrossBot));
+                LogUtil.LogInfo($"{username} está intentando dropear objetos, aunque la configuración de Twitch no permite comandos de drop.", nameof(TwitchCrossBot));
                 return string.Empty;
             }
             if (!GetDropAvailability(id, username, tcfg, out var error))
@@ -182,20 +182,20 @@ namespace SysBot.ACNHOrders.Twitch
             MultiItem.StackToMax(items);
 
             if (!InternalItemTool.CurrentInstance.IsSane(items, cfg.DropConfig))
-                return $"You are attempting to drop items that will damage your save. Drop request not accepted.";
+                return $"Estás intentando dropear objetos que pueden dañar tu partida. Petición denegada.";
 
             var MaxRequestCount = cfg.DropConfig.MaxDropCount;
             var ret = string.Empty;
             if (items.Count > MaxRequestCount)
             {
-                ret += $"Users are limited to {MaxRequestCount} items per command. Please use this bot responsibly. ";
+                ret += $"Los usuarios están limitados a {MaxRequestCount} objetos por comando. Por favor, usa este bot responsablemente. ";
                 items = items.Take(MaxRequestCount).ToArray();
             }
 
             var requestInfo = new ItemRequest(username, items);
             Globals.Bot.Injections.Enqueue(requestInfo);
 
-            ret += $"Item drop request{(requestInfo.Item.Count > 1 ? "s" : string.Empty)} will be executed momentarily.";
+            ret += $"La petición de drop del objeto {(requestInfo.Item.Count > 1 ? "s" : string.Empty)} será ejecutada momentáneamente.";
             return ret;
         }
 
@@ -203,7 +203,7 @@ namespace SysBot.ACNHOrders.Twitch
         {
             if (!TwitchCrossBot.Bot.Config.AcceptingCommands || TwitchCrossBot.Bot.Config.SkipConsoleBotCreation)
             {
-                msg = "Sorry, I am not currently accepting queue requests!";
+                msg = "Lo siento, no estoy aceptando peticiones de drop en este momento.";
                 return false;
             }
 
@@ -215,7 +215,7 @@ namespace SysBot.ACNHOrders.Twitch
 
             if (GlobalBan.IsBanned(id.ToString()))
             {
-                msg = "You have been banned for abuse. Order has not been accepted.";
+                msg = "Has sido baneado por abusar. Tu pedido se ha denegado.";
                 return false;
             }
 
@@ -227,7 +227,7 @@ namespace SysBot.ACNHOrders.Twitch
         {
             if (!InternalItemTool.CurrentInstance.IsSane(items, Globals.Bot.Config.DropConfig))
             {
-                msg = $"@{username} - You are attempting to order items that will damage your save. Order not accepted.";
+                msg = $"@{username} - Estás intentando dropear objetos que pueden dañar tu partida. Petición denegada.";
                 return false;
             }
 
@@ -235,7 +235,7 @@ namespace SysBot.ACNHOrders.Twitch
 
             var tq = new TwitchQueue(multiOrder.ItemArray.Items, vr, display, id, sub);
             TwitchCrossBot.QueuePool.Add(tq);
-            msg = $"@{username} - I've noted your order, now whisper me any random 3-digit number. Simply type /w @{TwitchCrossBot.BotName.ToLower()} [3-digit number] in this channel! Your order will not be placed in the queue until I get your whisper!";
+            msg = $"@{username} - He anotado tu pedido, ahora envíame por mensaje privado cualquier número de 3 dígitos. Escribe /w @{TwitchCrossBot.BotName.ToLower()} [número de 3 dígitos] en este canal. ¡Tu pedido no se añadirá a la cola hasta que me lo envíes!";
             return true;
         }
 
@@ -252,12 +252,12 @@ namespace SysBot.ACNHOrders.Twitch
 
             if (!cfg.AllowDrop)
             {
-                error = $"AllowDrop is currently set to false in the main config.";
+                error = $"AllowDrop está en false en la configuración.";
                 return false;
             }
             else if (!cfg.DodoModeConfig.LimitedDodoRestoreOnlyMode)
             {
-                error = $"You are only permitted to use this command while on the island during your order, and only if you have forgotten something in your order.";
+                error = $"Sólo puedes ejecutar este comando mientras estés en la isla durante tu pedido, y sólo si te has olvidado de algo.";
                 return false;
             }
 

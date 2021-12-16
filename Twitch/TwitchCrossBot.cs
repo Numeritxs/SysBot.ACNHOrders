@@ -68,9 +68,9 @@ namespace SysBot.ACNHOrders.Twitch
             client.OnLeftChannel += Client_OnLeftChannel;
 
             client.OnMessageSent += (_, e)
-                => LogUtil.LogText($"[{client.TwitchUsername}] - Message Sent in {e.SentMessage.Channel}: {e.SentMessage.Message}");
+                => LogUtil.LogText($"[{client.TwitchUsername}] - Mensaje enviado en {e.SentMessage.Channel}: {e.SentMessage.Message}");
             client.OnWhisperSent += (_, e)
-                => LogUtil.LogText($"[{client.TwitchUsername}] - Whisper Sent to @{e.Receiver}: {e.Message}");
+                => LogUtil.LogText($"[{client.TwitchUsername}] - Susurro enviado a @{e.Receiver}: {e.Message}");
 
             client.OnMessageThrottled += (_, e)
                 => LogUtil.LogError($"Message Throttled: {e.Message}", "TwitchBot");
@@ -115,14 +115,14 @@ namespace SysBot.ACNHOrders.Twitch
 
         private void Client_OnMessageReceived(object? sender, OnMessageReceivedArgs e)
         {
-            LogUtil.LogText($"[{client.TwitchUsername}] - Received message: @{e.ChatMessage.Username}: {e.ChatMessage.Message}");
+            LogUtil.LogText($"[{client.TwitchUsername}] - Mensaje recibido: @{e.ChatMessage.Username}: {e.ChatMessage.Message}");
             if (client.JoinedChannels.Count == 0)
                 client.JoinChannel(e.ChatMessage.Channel);
         }
 
         private void Client_OnLeftChannel(object? sender, OnLeftChannelArgs e)
         {
-            LogUtil.LogText($"[{client.TwitchUsername}] - Left channel {e.Channel}");
+            LogUtil.LogText($"[{client.TwitchUsername}] - Saliendo del canal {e.Channel}");
             client.JoinChannel(e.Channel);
         }
 
@@ -181,7 +181,7 @@ namespace SysBot.ACNHOrders.Twitch
                     return ReplacePredefined(Settings.UserDefinedSubOnlyCommands[c], m.Username);
                 }
                 else
-                    return $"@{m.Username} - You must be a subscriber to use this command.";
+                    return $"@{m.Username} - Tienes que ser un suscriptor para ejecutar este comando.";
             }
             if (Settings.UserDefinitedCommands.ContainsKey(c.ToLower()))
             {
@@ -224,13 +224,13 @@ namespace SysBot.ACNHOrders.Twitch
                 // Sudo Only Commands
                 case "toggledrop" when !sudo():
                 case "tcu" when !sudo():
-                    return "This command is locked for sudo users only!";
+                    return "¡Este comando es sólo para administradores!";
 
                 case "tcu":
                     return TwitchHelper.ClearTrade(args);
                 case "toggledrop":
                     Settings.AllowDropViaTwitchChat = !Settings.AllowDropViaTwitchChat;
-                    return Settings.AllowDropViaTwitchChat ? "I am now accepting drop commands!" : "I am no longer accepting drop commands!";
+                    return Settings.AllowDropViaTwitchChat ? "¡Ahora acepto drops desde Twitch!" : "¡Ya no acepto drops desde Twitch! :(";
 
                 default: return string.Empty;
             }
@@ -246,7 +246,7 @@ namespace SysBot.ACNHOrders.Twitch
                 return result;
             }
 
-            msg = $"@{queueItem.DisplayName} - Your 3-digit number was invalid. Order has been removed, please start over.";
+            msg = $"@{queueItem.DisplayName} - Tu número de 3 dígitos es incorrecto. Pedido eliminado, por favor, vuelve a empezar.";
             return false;
         }
 
@@ -257,13 +257,13 @@ namespace SysBot.ACNHOrders.Twitch
             {
                 var removed = QueuePool[0];
                 QueuePool.RemoveAt(0); // First in, first out
-                client.SendMessage(Channel, $"Removed @{removed.DisplayName} from the waiting list: stale request.");
+                client.SendMessage(Channel, $"Eliminado @{removed.DisplayName} de la cola: fallo en la sincronización horaria.");
             }
 
             var queueItem = QueuePool.FindLast(q => q.ID == ulong.Parse(e.WhisperMessage.UserId));
             if (queueItem == null)
             {
-                LogUtil.LogInfo($"No queue item found, returning...", nameof(TwitchCrossBot));
+                LogUtil.LogInfo($"No se ha encontrado cola alguna, volviendo atrás...", nameof(TwitchCrossBot));
                 return;
             }
             QueuePool.Remove(queueItem);

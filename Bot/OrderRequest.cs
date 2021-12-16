@@ -34,25 +34,25 @@ namespace SysBot.ACNHOrders
         public void OrderCancelled(CrossBot routine, string msg, bool faulted)
         {
             OnFinish?.Invoke(routine);
-            Trader.SendMessageAsync($"Oops! Something has happened with your order: {msg}");
+            Trader.SendMessageAsync($"Ups! Algo ha pasado con tu pedido: {msg}");
             if (!faulted)
-                CommandSentChannel.SendMessageAsync($"{Trader.Mention} - Your order has been cancelled: {msg}");
+                CommandSentChannel.SendMessageAsync($"{Trader.Mention} - Tu pedido ha sido cancelado: {msg}");
         }
 
         public void OrderInitializing(CrossBot routine, string msg)
         {
-            Trader.SendMessageAsync($"Your order is starting, please **ensure your inventory is __empty__**, then go talk to Orville and stay on the Dodo code entry screen. I will send you the Dodo code shortly. {msg}");
+            Trader.SendMessageAsync($"Tu pedido se ha iniciado, por favor **asegúrate de que tu inventario está __vacío__**, una vez hecho esto, ve a hablar con Rafa, y quédate esperando en la pantalla del código dodo. Te enviaré el código dodo en un momento. {msg}");
         }
 
         public void OrderReady(CrossBot routine, string msg, string dodo)
         {
-            Trader.SendMessageAsync($"I'm waiting for you {Trader.Username}! {msg}. Your Dodo code is **{dodo}**");
+            Trader.SendMessageAsync($"¡Estoy esperándote {Trader.Username}! {msg}. El código dodo es **{dodo}**");
         }
 
         public void OrderFinished(CrossBot routine, string msg)
         {
             OnFinish?.Invoke(routine);
-            Trader.SendMessageAsync($"Your order is complete, Thanks for your order! {msg}");
+            Trader.SendMessageAsync($"Tu pedido se ha completado, ¡muchas gracias! {msg}");
         }
 
         public void SendNotification(CrossBot routine, string msg)

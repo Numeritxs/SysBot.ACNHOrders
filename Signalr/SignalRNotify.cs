@@ -37,7 +37,7 @@ namespace SysBot.ACNHOrders.Signalr
             try
             {
                 await Connection.StartAsync();
-                LogUtil.LogInfo("Connected succesfully " + Connection.ConnectionId, "SignalR");
+                LogUtil.LogInfo("Conexión con éxito: " + Connection.ConnectionId, "SignalR");
                 Connected = true;
             }
             catch (Exception ex)

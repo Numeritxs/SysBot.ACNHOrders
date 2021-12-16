@@ -39,9 +39,9 @@ namespace SysBot.ACNHOrders
         public TimeBlock LastTimeState { get; private set; } = new();
         public bool CleanRequested { private get; set; }
         public bool RestoreRestartRequested { private get; set; }
-        public string DodoCode { get; set; } = "No code set yet.";
-        public string VisitorInfo { get; set; } = "No visitor info yet.";
-        public string TownName { get; set; } = "No town name yet.";
+        public string DodoCode { get; set; } = "Aún no hay código dodo.";
+        public string VisitorInfo { get; set; } = "Aún no hay información de los visitantes.";
+        public string TownName { get; set; } = "Aún no hay nombre de isla.";
         public string LastArrival { get; private set; } = string.Empty;
         public string LastArrivalIsland { get; private set; } = string.Empty;
         public ulong CurrentUserId { get; set; } = default!;
@@ -59,7 +59,7 @@ namespace SysBot.ACNHOrders
             if (Connection is ISwitchConnectionAsync con)
                 SwitchConnection = con;
             else
-                throw new Exception("Connection is null.");
+                throw new Exception("La conexión es null.");
 
             if (Connection is SwitchSocketAsync ssa)
                 ssa.MaximumTransferSize = cfg.MapPullChunkSize;
@@ -79,18 +79,18 @@ namespace SysBot.ACNHOrders
             // Validate map spawn vector
             if (Config.MapPlaceX < 0 || Config.MapPlaceX >= (MapGrid.AcreWidth * 32))
             {
-                LogUtil.LogInfo($"{Config.MapPlaceX} is not a valid value for {nameof(Config.MapPlaceX)}. Exiting!", Config.IP);
+                LogUtil.LogInfo($"{Config.MapPlaceX} no es un valor válido para {nameof(Config.MapPlaceX)}. ¡Saliendo!", Config.IP);
                 return;
             }
 
             if (Config.MapPlaceY < 0 || Config.MapPlaceY >= (MapGrid.AcreHeight * 32))
             {
-                LogUtil.LogInfo($"{Config.MapPlaceY} is not a valid value for {nameof(Config.MapPlaceY)}. Exiting!", Config.IP);
+                LogUtil.LogInfo($"{Config.MapPlaceY} no es un valor válido para {nameof(Config.MapPlaceY)}. ¡Saliendo!", Config.IP);
                 return;
             }
 
             // Disconnect our virtual controller; will reconnect once we send a button command after a request.
-            LogUtil.LogInfo("Detaching controller on startup as first interaction.", Config.IP);
+            LogUtil.LogInfo("Desconectando mando virtual en el inicio cómo primera interacción.", Config.IP);
             await Connection.SendAsync(SwitchCommand.DetachController(), token).ConfigureAwait(false);
             await Task.Delay(200, token).ConfigureAwait(false);
 
@@ -100,23 +100,23 @@ namespace SysBot.ACNHOrders
 
             // get version
             await Task.Delay(0_100, token).ConfigureAwait(false);
-            LogUtil.LogInfo("Attempting get version. Please wait...", Config.IP);
+            LogUtil.LogInfo("Intentando conseguir la versión, por favor espera...", Config.IP);
             string version = await SwitchConnection.GetVersionAsync(token).ConfigureAwait(false);
-            LogUtil.LogInfo($"sys-botbase version identified as: {version}", Config.IP);
+            LogUtil.LogInfo($"La versión de sys-botbase es: {version}", Config.IP);
 
             // Get inventory offset
             InventoryOffset = await this.GetCurrentPlayerOffset((uint)OffsetHelper.InventoryOffset, (uint)OffsetHelper.PlayerSize, token).ConfigureAwait(false);
             PocketInjector.WriteOffset = InventoryOffset;
 
             // Validate inventory offset.
-            LogUtil.LogInfo("Checking inventory offset for validity.", Config.IP);
+            LogUtil.LogInfo("Comprobando el offset del inventario...", Config.IP);
             var valid = await GetIsPlayerInventoryValid(InventoryOffset, token).ConfigureAwait(false);
             if (!valid)
             {
-                LogUtil.LogInfo($"Inventory read from {InventoryOffset} (0x{InventoryOffset:X8}) does not appear to be valid.", Config.IP);
+                LogUtil.LogInfo($"Lecutra del inventario desde {InventoryOffset} (0x{InventoryOffset:X8}) parece no ser válida.", Config.IP);
                 if (Config.RequireValidInventoryMetadata)
                 {
-                    LogUtil.LogInfo("Exiting!", Config.IP);
+                    LogUtil.LogInfo("¡Saliendo!", Config.IP);
                     return;
                 }
             }
@@ -133,11 +133,11 @@ namespace SysBot.ACNHOrders
             };
 
             // Pull town name and store it
-            LogUtil.LogInfo("Reading Town Name. Please wait...", Config.IP);
+            LogUtil.LogInfo("Leyendo nombre de la isla, por favor espera...", Config.IP);
             bytes = await Connection.ReadBytesAsync((uint)OffsetHelper.getTownNameAddress(InventoryOffset), 0x14, token).ConfigureAwait(false);
             TownName = Encoding.Unicode.GetString(bytes).TrimEnd('\0');
             VisitorList.SetTownName(TownName);
-            LogUtil.LogInfo("Town name set to " + TownName, Config.IP);
+            LogUtil.LogInfo("Nombre de la isla establecido a " + TownName, Config.IP);
 
             // pull villager data and store it
             Villagers = await VillagerHelper.GenerateHelper(this, token).ConfigureAwait(false);
@@ -145,15 +145,15 @@ namespace SysBot.ACNHOrders
             // pull in-game time and store it
             var timeBytes = await Connection.ReadBytesAsync((uint)OffsetHelper.TimeAddress, TimeBlock.SIZE, token).ConfigureAwait(false);
             LastTimeState = timeBytes.ToClass<TimeBlock>();
-            LogUtil.LogInfo("Started at in-game time: " + LastTimeState.ToString(), Config.IP);
+            LogUtil.LogInfo("Iniciado a las: " + LastTimeState.ToString() + "(hora del juego)", Config.IP);
 
             if (Config.ForceUpdateAnchors)
                 LogUtil.LogInfo("Force update anchors set to true, no functionality will activate", Config.IP);
 
-            LogUtil.LogInfo("Successfully connected to bot. Starting main loop!", Config.IP);
+            LogUtil.LogInfo("Conexión establecida con el bot. ¡Empezando loop principal!", Config.IP);
             if (Config.DodoModeConfig.LimitedDodoRestoreOnlyMode)
             {
-                LogUtil.LogInfo("Orders not accepted in dodo restore mode! Please ensure all joy-cons and controllers are docked!", Config.IP);
+                LogUtil.LogInfo("¡Pedidos no aceptados en el modo de restauración de código dodo! ¡Asegúrate que todos los joy-con o mandos están desconectados!", Config.IP);
                 while (!token.IsCancellationRequested)
                     await DodoRestoreLoop(false, token).ConfigureAwait(false);
             }
@@ -174,7 +174,7 @@ namespace SysBot.ACNHOrders
                 DodoCode = Encoding.UTF8.GetString(bytes, 0, 5);
 
                 if (DodoPosition.IsDodoValid(DodoCode) && Config.DodoModeConfig.EchoDodoChannels.Count > 0)
-                    await AttemptEchoHook($"[{DateTime.Now:yyyy-MM-dd hh:mm:ss tt}] The Dodo code for {TownName} has updated, the new Dodo code is: {DodoCode}.", Config.DodoModeConfig.EchoDodoChannels, token).ConfigureAwait(false);
+                    await AttemptEchoHook($"[{DateTime.Now:yyyy-MM-dd hh:mm:ss tt}] El código dodo de {TownName} se ha actualizado, el nuevo código es: {DodoCode}.", Config.DodoModeConfig.EchoDodoChannels, token).ConfigureAwait(false);
 
                 NotifyDodo(DodoCode);
 
@@ -187,7 +187,7 @@ namespace SysBot.ACNHOrders
                     if (RestoreRestartRequested)
                     {
                         RestoreRestartRequested = false;
-                        await AttemptEchoHook($"[{DateTime.Now:yyyy-MM-dd hh:mm:ss tt}] Please wait for the new dodo code for {TownName}.", Config.DodoModeConfig.EchoDodoChannels, token).ConfigureAwait(false);
+                        await AttemptEchoHook($"[{DateTime.Now:yyyy-MM-dd hh:mm:ss tt}] Por favor, espera al nuevo código Dodo de {TownName}.", Config.DodoModeConfig.EchoDodoChannels, token).ConfigureAwait(false);
                         await DodoRestoreLoop(true, token).ConfigureAwait(false);
                         return;
                     }
@@ -213,13 +213,13 @@ namespace SysBot.ACNHOrders
                     if (Config.DodoModeConfig.EchoArrivalChannels.Count > 0)
                         foreach (var diff in diffs)
                             if (!diff.Arrived)
-                                await AttemptEchoHook($"> [{DateTime.Now:yyyy-MM-dd hh:mm:ss tt}] 🛫 {diff.Name} has departed from {TownName}", Config.DodoModeConfig.EchoArrivalChannels, token).ConfigureAwait(false);
+                                await AttemptEchoHook($"> [{DateTime.Now:yyyy-MM-dd hh:mm:ss tt}] 🛫 {diff.Name} ha despegado de {TownName}", Config.DodoModeConfig.EchoArrivalChannels, token).ConfigureAwait(false);
 
                     // Check for new arrivals
                     if (await IsArriverNew(token).ConfigureAwait(false))
                     {
                         if (Config.DodoModeConfig.EchoArrivalChannels.Count > 0)
-                            await AttemptEchoHook($"> [{DateTime.Now:yyyy-MM-dd hh:mm:ss tt}] 🛬 {LastArrival} from {LastArrivalIsland} is joining {TownName}.{(Config.DodoModeConfig.PostDodoCodeWithNewArrivals ? $" Dodo code is: {DodoCode}." : string.Empty)}", Config.DodoModeConfig.EchoArrivalChannels, token).ConfigureAwait(false);
+                            await AttemptEchoHook($"> [{DateTime.Now:yyyy-MM-dd hh:mm:ss tt}] 🛬 {LastArrival} de {LastArrivalIsland} está aterrizando en {TownName}.{(Config.DodoModeConfig.PostDodoCodeWithNewArrivals ? $" El código dodo es: {DodoCode}." : string.Empty)}", Config.DodoModeConfig.EchoArrivalChannels, token).ConfigureAwait(false);
 
                         var nid = await Connection.ReadBytesAsync((uint)OffsetHelper.ArriverNID, 8, token).ConfigureAwait(false);
                         var islandId = await Connection.ReadBytesAsync((uint)OffsetHelper.ArriverVillageId, 4, token).ConfigureAwait(false);
@@ -228,9 +228,9 @@ namespace SysBot.ACNHOrders
                         {
                             var newnid = BitConverter.ToUInt64(nid, 0);
                             var newnislid = BitConverter.ToUInt32(islandId, 0);
-                            var plaintext = $"Treasure island arrival";
+                            var plaintext = $"Llegada a la isla del tesoro.";
                             IsSafeNewAbuse = NewAntiAbuse.Instance.LogUser(newnislid, newnid, string.Empty, plaintext);
-                            LogUtil.LogInfo($"Arrival logged: NID={newnid} TownID={newnislid} Order details={plaintext}", Config.IP);
+                            LogUtil.LogInfo($"Llegada registrada: NID={newnid} TownID={newnislid} Detalles del pedido={plaintext}", Config.IP);
                         }
                         catch { }
 
@@ -275,9 +275,9 @@ namespace SysBot.ACNHOrders
                 }
 
                 if (Config.DodoModeConfig.EchoDodoChannels.Count > 0)
-                    await AttemptEchoHook($"[{DateTime.Now:yyyy-MM-dd hh:mm:ss tt}] Crash detected on {TownName}. Please wait while I get a new Dodo code.", Config.DodoModeConfig.EchoDodoChannels, token).ConfigureAwait(false);
+                    await AttemptEchoHook($"[{DateTime.Now:yyyy-MM-dd hh:mm:ss tt}] Se ha detectado un fallo de conexión en {TownName}. Por favor, espera mientras consigo un nuevo código dodo.", Config.DodoModeConfig.EchoDodoChannels, token).ConfigureAwait(false);
                 NotifyState(GameState.Fetching);
-                LogUtil.LogInfo($"Crash detected on {TownName}, awaiting overworld to fetch new dodo.", Config.IP);
+                LogUtil.LogInfo($"Fallo de conexión detectado en {TownName}, esperando overworld para conseguir un nuevo código.", Config.IP);
                 await ResetFiles(token).ConfigureAwait(false);
                 await Task.Delay(5_000, token).ConfigureAwait(false);
 
@@ -286,32 +286,32 @@ namespace SysBot.ACNHOrders
 
                 var startTime = DateTime.Now;
                 // Wait for overworld
-                LogUtil.LogInfo($"Begin overworld wait loop.", Config.IP);
+                LogUtil.LogInfo($"Inicio de bucle de espera a overworld.", Config.IP);
                 while (await DodoPosition.GetOverworldState(OffsetHelper.PlayerCoordJumps, token).ConfigureAwait(false) != OverworldState.Overworld)
                 {
                     await Task.Delay(1_000, token).ConfigureAwait(false);
                     await Click(SwitchButton.B, 0_100, token).ConfigureAwait(false);
                     if (Math.Abs((DateTime.Now - startTime).TotalSeconds) > 45)
                     {
-                        LogUtil.LogError($"Hard crash detected on {TownName}, restarting game.", Config.IP);
+                        LogUtil.LogError($"Cierre inesperado en {TownName}, reiniciando juego.", Config.IP);
                         hardCrash = true;
                         break;
                     }
                 }
-                LogUtil.LogInfo($"End overworld wait loop.", Config.IP);
+                LogUtil.LogInfo($"Finalizado bucle de espera a overworld.", Config.IP);
             }
 
             var result = await ExecuteOrderStart(DummyRequest, true, hardCrash, token).ConfigureAwait(false);
 
             if (result != OrderResult.Success)
             {
-                LogUtil.LogError($"Dodo restore failed with error: {result}. Restarting game...", Config.IP);
+                LogUtil.LogError($"Restauración de código dodo fallida: {result}. Reiniciando juego...", Config.IP);
                 await DodoRestoreLoop(true, token).ConfigureAwait(false);
                 return;
             }
 
             await SaveDodoCodeToFile(token).ConfigureAwait(false);
-            LogUtil.LogError($"Dodo restore successful. New dodo for {TownName} is {DodoCode} and saved to {Config.DodoModeConfig.DodoRestoreFilename}.", Config.IP);
+            LogUtil.LogError($"Restauración de dodo finalizada con éxito. El nuevo código dodo de {TownName} es {DodoCode} y ha sido guardado en {Config.DodoModeConfig.DodoRestoreFilename}.", Config.IP);
             if (Config.DodoModeConfig.RefreshMap) // clean map
                 await ClearMapAndSpawnInternally(null, Map, Config.DodoModeConfig.RefreshTerrainData, token, true).ConfigureAwait(false);
         }
@@ -321,7 +321,7 @@ namespace SysBot.ACNHOrders
         {
             foreach (var msgChannel in channels)
                 if (!await Globals.Self.TrySpeakMessage(msgChannel, message).ConfigureAwait(false))
-                    LogUtil.LogError($"Unable to post into channels: {msgChannel}.", Config.IP);
+                    LogUtil.LogError($"No se ha podido enviar un mensaje en: {msgChannel}.", Config.IP);
         }
 
         private async Task OrderLoop(CancellationToken token)
@@ -340,7 +340,7 @@ namespace SysBot.ACNHOrders
                 var result = await ExecuteOrder(item, token).ConfigureAwait(false);
                 
                 // Cleanup
-                LogUtil.LogInfo($"Exited order with result: {result}", Config.IP);
+                LogUtil.LogInfo($"Pedido finalizado con resultado: {result}", Config.IP);
                 CurrentUserId = default!;
                 LastArrival = string.Empty;
                 CurrentUserName = string.Empty;
@@ -358,7 +358,7 @@ namespace SysBot.ACNHOrders
         private async Task<OrderResult> ExecuteOrder(IACNHOrderNotifier<Item> order, CancellationToken token)
         {
             var idToken = Globals.Bot.Config.OrderConfig.ShowIDs ? $" (ID {order.OrderID})" : string.Empty;
-            string startMsg = $"Starting order for: {order.VillagerName}{idToken}. Q Size: {Orders.ToArray().Length + 1}.";
+            string startMsg = $"Iniciando orden para: {order.VillagerName}{idToken}. Tamaño de la cola: {Orders.ToArray().Length + 1}.";
             LogUtil.LogInfo($"{startMsg} ({order.UserGuid})", Config.IP);
             if (order.VillagerName != string.Empty && Config.OrderConfig.EchoArrivingLeavingChannels.Count > 0)
                 await AttemptEchoHook($"> {startMsg}", Config.OrderConfig.EchoArrivingLeavingChannels, token).ConfigureAwait(false);
@@ -379,8 +379,8 @@ namespace SysBot.ACNHOrders
             }
             catch (OperationCanceledException e)
             {
-                LogUtil.LogInfo($"{order.VillagerName} ({order.UserGuid}) had their order timeout: {e.Message}.", Config.IP);
-                order.OrderCancelled(this, "Unfortunately a game crash occured while your order was in progress. Sorry, your request has been removed.", true);
+                LogUtil.LogInfo($"{order.VillagerName} ({order.UserGuid}) tu pedido ha expirado: {e.Message}.", Config.IP);
+                order.OrderCancelled(this, "Desafortunadamente, un fallo de conexión ha ocurrido mientras se llevaba a cabo tu pedido. Lo sentimos, tu pedido ha sido eliminado.", true);
             }
 
             if (result == OrderResult.Success)
@@ -468,7 +468,7 @@ namespace SysBot.ACNHOrders
                     {
                         if (await DodoPosition.GetOverworldState(OffsetHelper.PlayerCoordJumps, token).ConfigureAwait(false) == OverworldState.Overworld)
                         {
-                            LogUtil.LogInfo("Reached overworld, waiting for anchor 0 to match...", Config.IP);
+                            LogUtil.LogInfo("Overworld alcanzado, esperando que la anchor 0 se iguale...", Config.IP);
                             echoCount++;
                         }
                     }
@@ -477,13 +477,13 @@ namespace SysBot.ACNHOrders
 
                 if (!gameStarted)
                 {
-                    var error = "Failed to reach the overworld.";
-                    LogUtil.LogError($"{error} Trying next request.", Config.IP);
-                    order.OrderCancelled(this, $"{error} Sorry, your request has been removed.", true);
+                    var error = "Fallo al alcanzar el overworld.";
+                    LogUtil.LogError($"{error} Intentando siguiente pedido.", Config.IP);
+                    order.OrderCancelled(this, $"{error} Lo sentimos, tu pedido ha sido eliminado.", true);
                     return OrderResult.Faulted;
                 }
 
-                LogUtil.LogInfo("Anchor 0 matched successfully.", Config.IP);
+                LogUtil.LogInfo("Anchor 0 se ha igualado.", Config.IP);
 
                 // inject order
                 if (!ignoreInjection)
@@ -505,7 +505,7 @@ namespace SysBot.ACNHOrders
             // Unhold any held items
             await Click(SwitchButton.DDOWN, 0_300, token).ConfigureAwait(false);
 
-            LogUtil.LogInfo($"Reached overworld, teleporting to the airport.", Config.IP);
+            LogUtil.LogInfo($"Overworld alcanzado, teletransportándose al aeropuerto...", Config.IP);
 
             // Inject the airport entry anchor
             await SendAnchorBytes(2, token).ConfigureAwait(false);
@@ -513,7 +513,7 @@ namespace SysBot.ACNHOrders
             if (ignoreInjection)
             {
                 await SendAnchorBytes(1, token).ConfigureAwait(false);
-                LogUtil.LogInfo($"Checking for morning announcement", Config.IP);
+                LogUtil.LogInfo($"Comprobando si existe un anuncio matinal...", Config.IP);
                 // We need to check for Isabelle's morning announcement
                 for (int i = 0; i < 3; ++i)
                     await Click(SwitchButton.B, 0_400, token).ConfigureAwait(false);
@@ -534,7 +534,7 @@ namespace SysBot.ACNHOrders
 
             await Task.Delay(0_500, token).ConfigureAwait(false);
 
-            LogUtil.LogInfo($"Entering airport.", Config.IP);
+            LogUtil.LogInfo($"Entrando al aeropuerto.", Config.IP);
 
             await EnterAirport(token).ConfigureAwait(false);
 
@@ -545,7 +545,7 @@ namespace SysBot.ACNHOrders
             await SendAnchorBytes(3, token).ConfigureAwait(false);
             await Task.Delay(0_500, token).ConfigureAwait(false);
             int numChecks = 10;
-            LogUtil.LogInfo($"Attempting to warp to dodo counter...", Config.IP);
+            LogUtil.LogInfo($"Intentando alcanzar el mostrador...", Config.IP);
             while (!AnchorHelper.DoAnchorsMatch(await ReadAnchor(token).ConfigureAwait(false), Anchors.Anchors[3]))
             {
                 await SendAnchorBytes(3, token).ConfigureAwait(false);
@@ -568,7 +568,7 @@ namespace SysBot.ACNHOrders
 
             await Task.Delay(2_000, token).ConfigureAwait(false);
             if (order != null)
-                LogUtil.LogInfo("Map clear has started.", Config.IP);
+                LogUtil.LogInfo("La limpieza del mapa se ha iniciado.", Config.IP);
             if (forceFullWrite)
                 await Connection.WriteBytesAsync(clearMap.StartupBytes, (uint)OffsetHelper.FieldItemStart, token).ConfigureAwait(false);
             else
@@ -586,12 +586,12 @@ namespace SysBot.ACNHOrders
             }
 
             if (order != null)
-                LogUtil.LogInfo("Map clear has ended.", Config.IP);
+                LogUtil.LogInfo("La limpieza del mapa ha finalizado.", Config.IP);
         }
 
         private async Task<OrderResult> FetchDodoAndAwaitOrder(IACNHOrderNotifier<Item> order, bool ignoreInjection, CancellationToken token)
         {
-            LogUtil.LogInfo($"Talking to Orville. Attempting to get Dodo code for {TownName}.", Config.IP);
+            LogUtil.LogInfo($"Hablando con Rafa. Intentando conseguir un código dodo para {TownName}.", Config.IP);
             if (ignoreInjection)
                 await SetScreenCheck(true, token).ConfigureAwait(false);
             await DodoPosition.GetDodoCode((uint)OffsetHelper.DodoAddress, false, token).ConfigureAwait(false);
@@ -599,7 +599,7 @@ namespace SysBot.ACNHOrders
             // try again if we failed to get a dodo
             if (Config.OrderConfig.RetryFetchDodoOnFail && !DodoPosition.IsDodoValid(DodoPosition.DodoCode))
             {
-                LogUtil.LogInfo($"Failed to get a valid Dodo code for {TownName}. Trying again...", Config.IP);
+                LogUtil.LogInfo($"Ha ocurrido un error mientras se conseguía el código dodo para {TownName}. Volviendo a probar...", Config.IP);
                 for (int i = 0; i < 10; ++i)
                     await ClickConversation(SwitchButton.B, 0_600, token).ConfigureAwait(false);
                 await DodoPosition.GetDodoCode((uint)OffsetHelper.DodoAddress, true, token).ConfigureAwait(false);
@@ -609,9 +609,9 @@ namespace SysBot.ACNHOrders
 
             if (!DodoPosition.IsDodoValid(DodoPosition.DodoCode))
             {
-                var error = "Failed to connect to the internet and obtain a Dodo code.";
-                LogUtil.LogError($"{error} Trying next request.", Config.IP);
-                order.OrderCancelled(this, $"A connection error occured: {error} Sorry, your request has been removed.", true);
+                var error = "Ha ocurrido un error al conectarse a internet y conseguir un código dodo.";
+                LogUtil.LogError($"{error} Probando siguiente pedido.", Config.IP);
+                order.OrderCancelled(this, $"Ha ocurrido un error de conexión. {error} Lo sentimos, tu pedido ha sido eliminado.", true);
                 return OrderResult.Faulted;
             }
 
@@ -619,7 +619,7 @@ namespace SysBot.ACNHOrders
             LastDodoFetchTime = DateTime.Now;
 
             if (!ignoreInjection)
-                order.OrderReady(this, $"You have {(int)(Config.OrderConfig.WaitForArriverTime * 0.9f)} seconds to arrive. My island name is **{TownName}**", DodoCode);
+                order.OrderReady(this, $"Tienes {(int)(Config.OrderConfig.WaitForArriverTime * 0.9f)} segundos para llegar. El nombre de mi isla es **{TownName}**", DodoCode);
 
             if (DodoImageDrawer != null)
                 DodoImageDrawer.Draw(DodoCode);
@@ -652,7 +652,7 @@ namespace SysBot.ACNHOrders
             if (ignoreInjection)
                 return OrderResult.Success;
 
-            LogUtil.LogInfo($"Waiting for arrival.", Config.IP);
+            LogUtil.LogInfo($"Esperando la llegada.", Config.IP);
             var startTime = DateTime.Now;
             // Wait for arrival
             while (!await IsArriverNew(token).ConfigureAwait(false))
@@ -660,9 +660,9 @@ namespace SysBot.ACNHOrders
                 await Task.Delay(1_000, token).ConfigureAwait(false);
                 if (Math.Abs((DateTime.Now - startTime).TotalSeconds) > Config.OrderConfig.WaitForArriverTime)
                 {
-                    var error = "Visitor failed to arrive.";
-                    LogUtil.LogError($"{error}. Removed from queue, moving to next order.", Config.IP);
-                    order.OrderCancelled(this, $"{error} Your request has been removed.", false);
+                    var error = "El visitante no ha llegado.";
+                    LogUtil.LogError($"{error}. Eliminado de la cola, pasando al siguiente pedido.", Config.IP);
+                    order.OrderCancelled(this, $"{error} Tu pedido ha sido eliminado.", false);
                     return OrderResult.NoArrival;
                 }
             }
@@ -675,9 +675,9 @@ namespace SysBot.ACNHOrders
             {
                 var newnid = BitConverter.ToUInt64(nid, 0);
                 var newnislid = BitConverter.ToUInt32(islandId, 0);
-                var plaintext = $"Name and ID: {order.VillagerName}-{order.UserGuid}, Villager name and town: {LastArrival}-{LastArrivalIsland}";
+                var plaintext = $"Nombre e ID: {order.VillagerName}-{order.UserGuid}, Nombre de aldeano e isla: {LastArrival}-{LastArrivalIsland}";
                 IsSafeNewAbuse = NewAntiAbuse.Instance.LogUser(newnislid, newnid, order.UserGuid.ToString(), plaintext);
-                LogUtil.LogInfo($"Arrival logged: NID={newnid} TownID={newnislid} Order details={plaintext}", Config.IP);
+                LogUtil.LogInfo($"Aterrizaje registrado: NID={newnid} ID de isla={newnislid} Detalles del pedido={plaintext}", Config.IP);
             }
             catch(Exception e) 
             {
@@ -690,19 +690,19 @@ namespace SysBot.ACNHOrders
             {
                 if (!Config.AllowKnownAbusers)
                 {
-                    LogUtil.LogInfo($"{LastArrival} from {LastArrivalIsland} is a known abuser. Starting next order...", Config.IP);
-                    order.OrderCancelled(this, $"You are a known abuser. You cannot use this bot.", false);
+                    LogUtil.LogInfo($"{LastArrival} de {LastArrivalIsland} es un conocido abusador. Pasando al siguiente pedido...", Config.IP);
+                    order.OrderCancelled(this, $"Eres un conocido abusador. No puedes usar este bot.", false);
                     return OrderResult.NoArrival;
                 }
                 else
                 {
-                    LogUtil.LogInfo($"{LastArrival} from {LastArrivalIsland} is a known abuser, but you are allowing them to use your bot at your own risk.", Config.IP);
+                    LogUtil.LogInfo($"{LastArrival} de {LastArrivalIsland} es un conocido abusador, pero tu estás permitiéndole usar tu bot bajo tu propio riesgo.", Config.IP);
                 }
             }
 
-            order.SendNotification(this, $"Visitor arriving: {LastArrival}. Your items will be in front of you once you land.");
+            order.SendNotification(this, $"Visitante llegando: {LastArrival}. Tus objetos estarán delante tuyo cuando aterrices.");
             if (order.VillagerName != string.Empty && Config.OrderConfig.EchoArrivingLeavingChannels.Count > 0)
-                await AttemptEchoHook($"> Visitor arriving: {order.VillagerName}", Config.OrderConfig.EchoArrivingLeavingChannels, token).ConfigureAwait(false);
+                await AttemptEchoHook($"> Visitante llegando: {order.VillagerName}", Config.OrderConfig.EchoArrivingLeavingChannels, token).ConfigureAwait(false);
 
             // Wait for arrival animation (flight board, arrival through gate, terrible dodo seaplane joke, etc)
             await Task.Delay(10_000, token).ConfigureAwait(false);
@@ -747,32 +747,32 @@ namespace SysBot.ACNHOrders
                 await Task.Delay(1_000, token).ConfigureAwait(false);
                 if (Math.Abs((DateTime.Now - startTime).TotalSeconds) > (Config.OrderConfig.UserTimeAllowed - 60) && !warned)
                 {
-                    order.SendNotification(this, "You have 60 seconds remaining before I start the next order. Please ensure you can collect your items and leave within that time.");
+                    order.SendNotification(this, "Tienes 60 segundos hasta que comience el siguiente pedido. Asegúrate de recoger tus objetos y volver a tu isla antes de que acabe el tiempo.");
                     warned = true;
                 }
 
                 if (Math.Abs((DateTime.Now - startTime).TotalSeconds) > Config.OrderConfig.UserTimeAllowed)
                 {
-                    var error = "Visitor failed to leave.";
-                    LogUtil.LogError($"{error}. Removed from queue, moving to next order.", Config.IP);
-                    order.OrderCancelled(this, $"{error} Your request has been removed.", false);
+                    var error = "El visitante no ha llegado.";
+                    LogUtil.LogError($"{error}. Eliminado de la cola, pasando al siguiente pedido.", Config.IP);
+                    order.OrderCancelled(this, $"{error} Tu pedido ha sido eliminado.", false);
                     return OrderResult.NoLeave;
                 }
 
                 if (!await IsNetworkSessionActive(token).ConfigureAwait(false))
                 {
-                    var error = "Network crash detected.";
-                    LogUtil.LogError($"{error}. Removed from queue, moving to next order.", Config.IP);
-                    order.OrderCancelled(this, $"{error} Your request has been removed.", true);
+                    var error = "Se ha detectado un fallo de conexión.";
+                    LogUtil.LogError($"{error}. Eliminado de la cola, pasando al siguiente pedido.", Config.IP);
+                    order.OrderCancelled(this, $"{error} Tu pedido ha sido eliminado.", true);
                     return OrderResult.Faulted;
                 }
             }
 
-            LogUtil.LogInfo($"Order completed. Notifying visitor of completion.", Config.IP);
+            LogUtil.LogInfo($"Pedido finalizado. Notificando al visitante.", Config.IP);
             await UpdateBlocker(true, token).ConfigureAwait(false);
             order.OrderFinished(this, Config.OrderConfig.CompleteOrderMessage);
             if (order.VillagerName != string.Empty && Config.OrderConfig.EchoArrivingLeavingChannels.Count > 0)
-                await AttemptEchoHook($"> Visitor completed order, and is now leaving: {order.VillagerName}", Config.OrderConfig.EchoArrivingLeavingChannels, token).ConfigureAwait(false);
+                await AttemptEchoHook($"> El visitante ha completado el pedido y se está yendo: {order.VillagerName}", Config.OrderConfig.EchoArrivingLeavingChannels, token).ConfigureAwait(false);
             
             await Task.Delay(5_000, token).ConfigureAwait(false);
             await UpdateBlocker(false, token).ConfigureAwait(false);
@@ -955,7 +955,7 @@ namespace SysBot.ACNHOrders
             anchors[index].Anchor1 = bytesA;
             anchors[index].Anchor2 = bytesB;
             Anchors.Save();
-            LogUtil.LogInfo($"Updated anchor {index}.", Config.IP);
+            LogUtil.LogInfo($"Anchor {index} actualizada.", Config.IP);
             return true;
         }
 
@@ -991,7 +991,7 @@ namespace SysBot.ACNHOrders
                 data = await Connection.ReadBytesAsync((uint)OffsetHelper.ArriverVillageLocAddress, 0x14, token).ConfigureAwait(false);
                 LastArrivalIsland = Encoding.Unicode.GetString(data).TrimEnd('\0').TrimEnd();
 
-                LogUtil.LogInfo($"{arriverName} from {LastArrivalIsland} is arriving!", Config.IP);
+                LogUtil.LogInfo($"{arriverName} de {LastArrivalIsland} está aterrizando!", Config.IP);
 
                 if (Config.HideArrivalNames)
                 {
@@ -1007,7 +1007,7 @@ namespace SysBot.ACNHOrders
 
         private async Task SaveVillagersToFile(CancellationToken token)
         {
-            string DodoDetails = Config.DodoModeConfig.MinimizeDetails ? Villagers.LastVillagers : $"Villagers on {TownName}: {Villagers.LastVillagers}";
+            string DodoDetails = Config.DodoModeConfig.MinimizeDetails ? Villagers.LastVillagers : $"Aldeanos en {TownName}: {Villagers.LastVillagers}";
             byte[] encodedText = Encoding.ASCII.GetBytes(DodoDetails);
             await FileUtil.WriteBytesToFileAsync(encodedText, Config.DodoModeConfig.VillagerFilename, token).ConfigureAwait(false);
         }
@@ -1023,12 +1023,12 @@ namespace SysBot.ACNHOrders
         {
             string VisitorInfo;
             if (VisitorList.VisitorCount == VisitorListHelper.VisitorListSize)
-                VisitorInfo = Config.DodoModeConfig.MinimizeDetails ? $"FULL" : $"{TownName} is full";
+                VisitorInfo = Config.DodoModeConfig.MinimizeDetails ? $"LLENO" : $"{TownName} está llena";
             else
             {
                 // VisitorList.VisitorCount - 1 because the host is always on the island.
                 uint VisitorCount = VisitorList.VisitorCount - 1;
-                VisitorInfo = Config.DodoModeConfig.MinimizeDetails ? $"{VisitorCount}" : $"Visitors: {VisitorCount}";
+                VisitorInfo = Config.DodoModeConfig.MinimizeDetails ? $"{VisitorCount}" : $"Visitantes: {VisitorCount}";
             }
 
             // visitor count
@@ -1042,14 +1042,14 @@ namespace SysBot.ACNHOrders
 
         private async Task ResetFiles(CancellationToken token)
         {
-            string DodoDetails = Config.DodoModeConfig.MinimizeDetails ? "FETCHING" : $"{TownName}: FETCHING";
+            string DodoDetails = Config.DodoModeConfig.MinimizeDetails ? "BUSCANDO" : $"{TownName}: BUSCANDO";
             byte[] encodedText = Encoding.ASCII.GetBytes(DodoDetails);
             await FileUtil.WriteBytesToFileAsync(encodedText, Config.DodoModeConfig.DodoRestoreFilename, token).ConfigureAwait(false);
 
-            encodedText = Encoding.ASCII.GetBytes(Config.DodoModeConfig.MinimizeDetails ? "0" : "Visitors: 0");
+            encodedText = Encoding.ASCII.GetBytes(Config.DodoModeConfig.MinimizeDetails ? "0" : "Visitantes: 0");
             await FileUtil.WriteBytesToFileAsync(encodedText, Config.DodoModeConfig.VisitorFilename, token).ConfigureAwait(false);
 
-            encodedText = Encoding.ASCII.GetBytes(Config.DodoModeConfig.MinimizeDetails ? "No-one" : "No visitors");
+            encodedText = Encoding.ASCII.GetBytes(Config.DodoModeConfig.MinimizeDetails ? "Ninguno" : "Ningún visitante");
             await FileUtil.WriteBytesToFileAsync(encodedText, Config.DodoModeConfig.VisitorListFilename, token).ConfigureAwait(false);
         }
 
@@ -1066,7 +1066,7 @@ namespace SysBot.ACNHOrders
             // speaks take priority
             if (Speaks.TryDequeue(out var chat))
             {
-                LogUtil.LogInfo($"Now speaking: {chat.User}:{chat.Item}", Config.IP);
+                LogUtil.LogInfo($"Está hablando: {chat.User}:{chat.Item}", Config.IP);
                 await Speak(chat.Item, token).ConfigureAwait(false);
             }
 
@@ -1157,7 +1157,7 @@ namespace SysBot.ACNHOrders
             }
 
             var itemName = GameInfo.Strings.GetItemName(item);
-            LogUtil.LogInfo($"Injecting Item: {item.DisplayItemId:X4} ({itemName}).", Config.IP);
+            LogUtil.LogInfo($"Inyectando objeto: {item.DisplayItemId:X4} ({itemName}).", Config.IP);
             Item[]? startItems = null;
 
             // Inject item into entire inventory
@@ -1167,7 +1167,7 @@ namespace SysBot.ACNHOrders
                 InjectionResult result;
                 (result, startItems) = await PocketInjector.Read(token).ConfigureAwait(false);
                 if (result != InjectionResult.Success)
-                    LogUtil.LogInfo($"Read failed: {result}", Config.IP);
+                    LogUtil.LogInfo($"Lectura fallida: {result}", Config.IP);
 
                 // Inject our safe-to-drop item
                 await PocketInjector.Write40(PocketInjector.DroppableOnlyItem, token);
@@ -1213,7 +1213,7 @@ namespace SysBot.ACNHOrders
 
         private async Task CleanUp(int count, CancellationToken token)
         {
-            LogUtil.LogInfo("Picking up leftover items during idle time.", Config.IP);
+            LogUtil.LogInfo("Cogiendo objetos sobrantes del suelo.", Config.IP);
 
             // Exit out of any menus.
             for (int i = 0; i < 3; i++)

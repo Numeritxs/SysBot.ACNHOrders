@@ -135,7 +135,7 @@ namespace SysBot.ACNHOrders
                 var c = (ISocketMessageChannel)_client.GetChannel(cid);
                 if (c == null)
                 {
-                    Console.WriteLine($"{cid} is null or couldn't be found.");
+                    Console.WriteLine($"{cid} es null o no se ha encontrado.");
                     continue;
                 }
                 static string GetMessage(string msg, string identity) => $"> [{DateTime.Now:hh:mm:ss}] - {identity}: {msg}";
@@ -227,10 +227,10 @@ namespace SysBot.ACNHOrders
             var mention = msg.Author.Mention;
 
             var guild = msg.Channel is SocketGuildChannel g ? g.Guild.Name : "Unknown Guild";
-            await Log(new LogMessage(LogSeverity.Info, "Command", $"Possible spam detected in {guild}#{msg.Channel.Name}:@{msg.Author.Username}. Content: {msg}")).ConfigureAwait(false);
+            await Log(new LogMessage(LogSeverity.Info, "Command", $"Posible spam detectado en {guild}#{msg.Channel.Name}:@{msg.Author.Username}. Contenido: {msg}")).ConfigureAwait(false);
 
             await msg.DeleteAsync(RequestOptions.Default).ConfigureAwait(false);
-            await msg.Channel.SendMessageAsync($"{mention} - The order channels are for bot commands only.\nDeleted Message:```\n{msgText}\n```").ConfigureAwait(false);
+            await msg.Channel.SendMessageAsync($"{mention} - Los canales de pedidos son solo para pedidos.\nMensaje eliminado:```\n{msgText}\n```").ConfigureAwait(false);
 
             return true;
         }
@@ -255,12 +255,12 @@ namespace SysBot.ACNHOrders
             {
                 if (!mgr.CanUseCommandUser(msg.Author.Id))
                 {
-                    await msg.Channel.SendMessageAsync("You are not permitted to use this command.").ConfigureAwait(false);
+                    await msg.Channel.SendMessageAsync("No tienes permiso para ejecutar este comando.").ConfigureAwait(false);
                     return true;
                 }
                 if (!mgr.CanUseCommandChannel(msg.Channel.Id) && msg.Author.Id != Owner && !mgr.CanUseSudo(msg.Author.Id))
                 {
-                    await msg.Channel.SendMessageAsync("You can't use that command here.").ConfigureAwait(false);
+                    await msg.Channel.SendMessageAsync("No puedes usar este comando aquí.").ConfigureAwait(false);
                     return true;
                 }
             }
@@ -268,7 +268,7 @@ namespace SysBot.ACNHOrders
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed successfully).
             var guild = msg.Channel is SocketGuildChannel g ? g.Guild.Name : "Unknown Guild";
-            await Log(new LogMessage(LogSeverity.Info, "Command", $"Executing command from {guild}#{msg.Channel.Name}:@{msg.Author.Username}. Content: {msg}")).ConfigureAwait(false);
+            await Log(new LogMessage(LogSeverity.Info, "Command", $"Ejecutando el comando desde {guild}#{msg.Channel.Name}:@{msg.Author.Username}. Contenido: {msg}")).ConfigureAwait(false);
             var result = await _commands.ExecuteAsync(context, pos, _services).ConfigureAwait(false);
 
             if (result.Error == CommandError.UnknownCommand)
